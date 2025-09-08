@@ -21,8 +21,9 @@ RUN pip install -r /tmp/requirements.txt
 COPY services/api-gateway /app
 # Also copy shared libs so we can import libs.core
 COPY libs /app/libs
+# Copy orchestrator code so we can import its actors
+COPY services/orchestrator /app/services/orchestrator
 
 EXPOSE 8000
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-

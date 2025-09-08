@@ -1,0 +1,6 @@
+dramatiq>=1.16
+redis>=5.0
+boto3>=1.34
+python-dotenv>=1.0
+pydantic>=2,<3
+

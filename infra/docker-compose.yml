@@ -58,6 +58,15 @@ services:
       - minio
     env_file: ./.env
 
+  orchestrator:
+    build:
+      context: ..
+      dockerfile: services/orchestrator/Dockerfile
+    depends_on:
+      - redis
+      - minio
+    env_file: ./.env
+
 volumes:
   postgres_data:
   minio_data:

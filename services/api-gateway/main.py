@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import logging
 from uuid import uuid4
 from typing import Any, Dict
 
@@ -12,12 +13,23 @@ from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 
 from libs.core import ProjectInput, Manifest
+import dramatiq
+from dramatiq.brokers.redis import RedisBroker
+from services.orchestrator.main import process_project
 
 
 # Load .env if present (useful for local runs). In containers, env is provided by compose.
 load_dotenv()
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("api-gateway")
+
 app = FastAPI(title="Signum API Gateway", version="0.1.0")
+
+# Dramatiq broker to Redis (shared with orchestrator)
+redis_url = os.getenv("REDIS_URL", "redis://redis:6379")
+broker = RedisBroker(url=redis_url)
+dramatiq.set_broker(broker)
 
 
 def _minio_client():
@@ -45,10 +57,17 @@ def health() -> Dict[str, str]:
 def create_project(payload: Dict[str, Any]) -> JSONResponse:
     # Validate manually to return 400 on invalid input (instead of 422)
     try:
-        _ = ProjectInput.model_validate(payload)
+        pi = ProjectInput.model_validate(payload)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     run_id = str(uuid4())
+
+    # Enqueue task to orchestrator via actor
+    # Use JSON mode to ensure datetime is serialized for Dramatiq encoder
+    process_project.send(run_id, pi.model_dump(mode="json"))
+
+    logger.info("Project %s enqueued", run_id)
+
     return JSONResponse(status_code=202, content={"run_id": run_id})
 
 
