@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  api-gateway:
+    image: alpine:3.19
+    command: ["sh", "-c", "echo api-gateway placeholder && sleep infinity"]
+    env_file:
+      - .env
+  orchestrator:
+    image: alpine:3.19
+    command: ["sh", "-c", "echo orchestrator placeholder && sleep infinity"]
+    env_file:
+      - .env
+  export-manager:
+    image: alpine:3.19
+    command: ["sh", "-c", "echo export-manager placeholder && sleep infinity"]
+    env_file:
+      - .env
+  docs:
+    image: alpine:3.19
+    command: ["sh", "-c", "echo docs placeholder && sleep infinity"]
+    env_file:
+      - .env
+volumes: {}
+

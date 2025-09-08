@@ -1,0 +1,15 @@
+{
+  "projectType": "app",
+  "scriptType": "js",
+  "engine": "vite-2",
+  "name": "frontend",
+  "productName": "Quasar App",
+  "description": "A Quasar Project",
+  "author": "Signum <signum@example.com>",
+  "sfcStyle": "composition-setup",
+  "css": "scss",
+  "preset": ["eslint"],
+  "prettier": true,
+  "packageManager": "npm",
+  "overwrite": true
+}
