@@ -1,0 +1,52 @@
+{
+  "$defs": {
+    "Artifact": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "content": {
+          "additionalProperties": true,
+          "title": "Content",
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "content"
+      ],
+      "title": "Artifact",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "project": {
+      "title": "Project",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "artifacts": {
+      "items": {
+        "$ref": "#/$defs/Artifact"
+      },
+      "title": "Artifacts",
+      "type": "array"
+    }
+  },
+  "required": [
+    "project",
+    "version",
+    "artifacts"
+  ],
+  "title": "Manifest",
+  "type": "object"
+}

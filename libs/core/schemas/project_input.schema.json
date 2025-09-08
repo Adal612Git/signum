@@ -1,0 +1,35 @@
+{
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "owner": {
+      "title": "Owner",
+      "type": "string"
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Created At"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "owner"
+  ],
+  "title": "ProjectInput",
+  "type": "object"
+}
