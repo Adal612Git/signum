@@ -46,6 +46,18 @@ services:
       timeout: 20s
       retries: 3
 
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+    env_file: ./.env
+
 volumes:
   postgres_data:
   minio_data:
