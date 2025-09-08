@@ -66,6 +66,9 @@ services:
       - redis
       - minio
     env_file: ./.env
+    environment:
+      PYTHONPATH: /app
+    command: ["dramatiq", "services.orchestrator.main", "--processes", "1", "--threads", "1"]
 
 volumes:
   postgres_data:

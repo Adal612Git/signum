@@ -78,6 +78,40 @@ def process_project(run_id: str, data: Dict[str, Any]) -> None:
         raise
 
 
+@dramatiq.actor
+def docs_build(project: Dict[str, Any]) -> None:
+    """Builds documentation and uploads to MinIO under artifacts/<id>/docs/."""
+    proj_id = str(project.get("id") or project.get("run_id") or project.get("name") or "project")
+    logger.info("Building docs for %s", proj_id)
+    try:
+        # Lazy import to avoid hard dependency in importers (e.g., api-gateway)
+        from libs.docgen import build_docs  # type: ignore
+
+        # Generate docs locally
+        outputs = build_docs(project)
+
+        # Upload to MinIO
+        s3 = _minio_client()
+        bucket = "artifacts"
+        _ensure_bucket(s3, bucket)
+
+        base_prefix = f"{proj_id}/docs/"
+        for name, path in outputs.items():
+            key = base_prefix + os.path.basename(path)
+            with open(path, "rb") as f:
+                body = f.read()
+            content_type = (
+                "application/pdf"
+                if name.endswith(".pdf")
+                else ("text/markdown" if name.endswith(".md") else "text/html")
+            )
+            s3.put_object(Bucket=bucket, Key=key, Body=body, ContentType=content_type)
+        logger.info("Docs generated for %s at artifacts/%sdocs/", proj_id, proj_id + "/")
+    except Exception as e:
+        logger.exception("Failed docs generation for %s: %s", proj_id, e)
+        raise
+
+
 if __name__ == "__main__":
     # Local manual enqueue example (for quick sanity checks)
     sample = {"name": "demo", "description": "d", "owner": "you"}

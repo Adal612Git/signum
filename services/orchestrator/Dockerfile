@@ -9,14 +9,18 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential && \
+    build-essential \
+    libcairo2 \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgdk-pixbuf-2.0-0 \
+    fonts-dejavu-core && \
     rm -rf /var/lib/apt/lists/*
 
 COPY services/orchestrator/requirements.txt /tmp/requirements.txt
 RUN pip install -r /tmp/requirements.txt
 
-COPY services/orchestrator /app
-# Include shared libs for imports
-COPY libs /app/libs
+# Copy entire repository so Python can import `services` and `libs`
+COPY . /app
 
 CMD ["dramatiq", "main", "--processes", "1", "--threads", "2"]

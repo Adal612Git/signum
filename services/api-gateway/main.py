@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
 import boto3
 from botocore.config import Config as BotoConfig
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, EndpointConnectionError
 
 from libs.core import ProjectInput, Manifest
 import dramatiq
@@ -33,17 +33,16 @@ dramatiq.set_broker(broker)
 
 
 def _minio_client():
-    endpoint = os.getenv("MINIO_ENDPOINT", "http://localhost:9000")
-    access_key = os.getenv("MINIO_ROOT_USER")
-    secret_key = os.getenv("MINIO_ROOT_PASSWORD")
-    if not access_key or not secret_key:
-        raise RuntimeError("Missing MINIO credentials in environment variables.")
+    endpoint = os.getenv("S3_ENDPOINT_URL", "http://minio:9000")
+    access_key = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
+    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
+    region = os.getenv("AWS_REGION", "us-east-1")
     return boto3.client(
         "s3",
         endpoint_url=endpoint,
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
-        region_name="us-east-1",
+        region_name=region,
         config=BotoConfig(signature_version="s3v4"),
     )
 
@@ -76,6 +75,32 @@ def get_project(project_id: str) -> Dict[str, Any]:
     # Stub status and partial manifest
     manifest = Manifest(project=project_id, version="0.0.1", artifacts=[])
     return {"status": "pending", "manifest": manifest.model_dump()}
+
+
+@app.get("/projects/{project_id}/docs")
+def list_project_docs(project_id: str):
+    s3 = _minio_client()
+    prefix = f"{project_id}/docs/"
+    bucket = "artifacts"
+    try:
+        paginator = s3.get_paginator("list_objects_v2")
+        docs = []
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents") or []:
+                key = obj.get("Key", "")
+                name = key.rsplit("/", 1)[-1]
+                if not name:
+                    continue
+                lower = name.lower()
+                if lower.endswith(".md") or lower.endswith(".pdf"):
+                    docs.append({"name": name, "url": f"s3://{bucket}/{key}"})
+
+        if not docs:
+            return JSONResponse(status_code=404, content={"error": "No docs found"})
+
+        return {"project_id": project_id, "docs": docs}
+    except (ClientError, EndpointConnectionError):
+        return JSONResponse(status_code=500, content={"error": "Storage unavailable"})
 
 
 @app.get("/artifacts/{artifact_id}/{path:path}")
