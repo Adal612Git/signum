@@ -112,6 +112,37 @@ def docs_build(project: Dict[str, Any]) -> None:
         raise
 
 
+@dramatiq.actor
+def uml_build(project: Dict[str, Any]) -> None:
+    """Builds UML artifacts and uploads to MinIO under artifacts/<id>/uml/."""
+    proj_id = str(project.get("id") or project.get("run_id") or project.get("name") or "project")
+    try:
+        from libs.uml import build_uml  # type: ignore
+
+        outputs = build_uml(project)
+
+        s3 = _minio_client()
+        bucket = "artifacts"
+        _ensure_bucket(s3, bucket)
+
+        base_prefix = f"{proj_id}/uml/"
+        for name, path in outputs.items():
+            if name == "base_dir":
+                continue
+            filename = os.path.basename(path)
+            key = base_prefix + filename
+            with open(path, "rb") as f:
+                body = f.read()
+            content_type = "text/markdown" if filename.endswith(".md") else "application/json"
+            s3.put_object(Bucket=bucket, Key=key, Body=body, ContentType=content_type)
+            logger.info("Uploaded UML %s to s3://%s/%s", filename, bucket, key)
+
+        logger.info("UML generated for %s at artifacts/%suml/", proj_id, proj_id + "/")
+    except Exception as e:
+        logger.exception("Failed UML generation for %s: %s", proj_id, e)
+        raise
+
+
 if __name__ == "__main__":
     # Local manual enqueue example (for quick sanity checks)
     sample = {"name": "demo", "description": "d", "owner": "you"}
