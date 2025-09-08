@@ -17,6 +17,7 @@ import dramatiq
 from dramatiq.brokers.redis import RedisBroker
 from services.orchestrator.main import process_project
 from services.orchestrator.main import uml_build  # type: ignore
+from services.orchestrator.main import gantt_build  # type: ignore
 
 
 # Load .env if present (useful for local runs). In containers, env is provided by compose.
@@ -134,6 +135,36 @@ def build_project_uml(project_id: str, payload: Dict[str, Any] | None = None) ->
     project["id"] = project_id
     # Enqueue UML build
     uml_build.send(project)
+    return JSONResponse(status_code=202, content={"enqueued": True, "project_id": project_id})
+
+
+@app.get("/projects/{project_id}/gantt")
+def list_project_gantt(project_id: str):
+    s3 = _minio_client()
+    prefix = f"{project_id}/plan/"
+    bucket = "artifacts"
+    try:
+        paginator = s3.get_paginator("list_objects_v2")
+        files = []
+        want = {"gantt.json", "gantt.mmd", "gantt.png"}
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents") or []:
+                key = obj.get("Key", "")
+                name = key.rsplit("/", 1)[-1]
+                if name in want:
+                    files.append({"name": name, "url": f"s3://{bucket}/{key}"})
+        if not files:
+            return JSONResponse(status_code=404, content={"error": "No Gantt found"})
+        return {"project_id": project_id, "gantt": files}
+    except (ClientError, EndpointConnectionError):
+        return JSONResponse(status_code=500, content={"error": "Storage unavailable"})
+
+
+@app.post("/projects/{project_id}/gantt", status_code=202)
+def build_project_gantt(project_id: str, payload: Dict[str, Any] | None = None) -> JSONResponse:
+    project: Dict[str, Any] = payload.copy() if isinstance(payload, dict) else {}
+    project["id"] = project_id
+    gantt_build.send(project)
     return JSONResponse(status_code=202, content={"enqueued": True, "project_id": project_id})
 
 

@@ -143,6 +143,42 @@ def uml_build(project: Dict[str, Any]) -> None:
         raise
 
 
+@dramatiq.actor
+def gantt_build(project: Dict[str, Any]) -> None:
+    """Builds Gantt artifacts and uploads to MinIO under artifacts/<id>/plan/."""
+    proj_id = str(project.get("id") or project.get("run_id") or project.get("name") or "project")
+    try:
+        from libs.gantt import build_gantt  # type: ignore
+
+        outputs = build_gantt(project)
+
+        s3 = _minio_client()
+        bucket = "artifacts"
+        _ensure_bucket(s3, bucket)
+
+        base_prefix = f"{proj_id}/plan/"
+        for name, path in outputs.items():
+            if name == "base_dir":
+                continue
+            filename = os.path.basename(path)
+            key = base_prefix + filename
+            with open(path, "rb") as f:
+                body = f.read()
+            if filename.endswith(".json"):
+                content_type = "application/json"
+            elif filename.endswith(".png"):
+                content_type = "image/png"
+            else:
+                content_type = "text/plain"
+            s3.put_object(Bucket=bucket, Key=key, Body=body, ContentType=content_type)
+            logger.info("Uploaded Gantt %s to s3://%s/%s", filename, bucket, key)
+
+        logger.info("Gantt generated for %s at artifacts/%splan/", proj_id, proj_id + "/")
+    except Exception as e:
+        logger.exception("Failed Gantt generation for %s: %s", proj_id, e)
+        raise
+
+
 if __name__ == "__main__":
     # Local manual enqueue example (for quick sanity checks)
     sample = {"name": "demo", "description": "d", "owner": "you"}
