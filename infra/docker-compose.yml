@@ -1,24 +1,51 @@
 version: "3.9"
 services:
-  api-gateway:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo api-gateway placeholder && sleep infinity"]
-    env_file:
-      - .env
-  orchestrator:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo orchestrator placeholder && sleep infinity"]
-    env_file:
-      - .env
-  export-manager:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo export-manager placeholder && sleep infinity"]
-    env_file:
-      - .env
-  docs:
-    image: alpine:3.19
-    command: ["sh", "-c", "echo docs placeholder && sleep infinity"]
-    env_file:
-      - .env
-volumes: {}
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+volumes:
+  postgres_data:
+  minio_data:
