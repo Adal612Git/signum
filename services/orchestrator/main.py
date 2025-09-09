@@ -13,6 +13,9 @@ from botocore.exceptions import ClientError
 
 from libs.core import ProjectInput, new_manifest
 
+# Import AEGIS actor to register it at startup and expose the symbol in this module
+from services.orchestrator.actors.aegis import aegis_quality_gates  # noqa: F401
+
 
 load_dotenv()
 
