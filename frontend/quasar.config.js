@@ -14,7 +14,9 @@ export default defineConfig((/* ctx */) => {
     boot: [],
 
     // https://v2.quasar.dev/quasar-cli-vite/quasar-config-file#css
-    css: ['app.scss'],
+    // Quasar treats entries as relative to src/css, so to include a file from src/styles
+    // we reference it relatively from src/css
+    css: ['../styles/NeonTheme.css'],
 
     // https://github.com/quasarframework/quasar/tree/dev/extras
     extras: [
