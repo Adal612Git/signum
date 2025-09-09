@@ -10,6 +10,7 @@ from dramatiq.brokers.redis import RedisBroker
 from dotenv import load_dotenv
 import boto3
 from botocore.exceptions import ClientError
+from fastapi import FastAPI
 
 from libs.core import ProjectInput, new_manifest
 
@@ -21,6 +22,18 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("orchestrator")
+
+# Expose a FastAPI app for REST endpoints (does not interfere with Dramatiq)
+app = FastAPI(title="Signum Orchestrator")
+try:
+    from services.export_manager.api import (
+        router as export_router,
+    )  # lazy import to avoid heavy deps at import time
+
+    app.include_router(export_router, prefix="/exports")
+except Exception:
+    # Keep app import-safe even if export manager optional deps are missing
+    pass
 
 
 def _minio_client():
