@@ -1,8 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
 
 :root {
-  --bg-start: #000000;
-  --bg-end: #0a0a0a;
+  --bg-start: #0d0d0d;
+  --bg-end: #1a1a1a;
   --neon-pink: #ff00ff;
   --neon-green: #39ff14;
   --neon-blue: #00d9ff;
@@ -14,6 +14,32 @@ html, body, #q-app {
   background: linear-gradient(145deg, var(--bg-start), var(--bg-end));
   color: #e5e7eb;
   font-family: Inter, 'JetBrains Mono', system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+}
+
+/* Page and editor containers */
+.q-page {
+  background: #111827;
+  border: 1px solid #1f2937;
+}
+
+/* Cards */
+.q-card, .card-dark {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+}
+
+/* Inputs and textareas (Quasar field control) */
+.q-field__control {
+  background: #111827 !important;
+  border: 1px solid #1f2937 !important;
+}
+.q-field__native, .q-field__input, textarea, input {
+  background: transparent !important;
+  color: #e5e7eb !important;
+}
+.q-field__native::placeholder, textarea::placeholder, input::placeholder {
+  color: #9ca3af !important;
 }
 
 .neon-title {
@@ -57,11 +83,7 @@ html, body, #q-app {
 .neon-tag--failed { background: rgba(255, 0, 153, 0.15); color: #ff0099; box-shadow: 0 0 6px rgba(255,0,153,.6); }
 .neon-tag--running { background: rgba(0, 217, 255, 0.15); color: var(--neon-blue); box-shadow: 0 0 6px rgba(0,217,255,.6); }
 
-.card-dark {
-  background: #0d0f12;
-  border: 1px solid #1f2937;
-  border-radius: 12px;
-}
+/* card-dark updated above with .q-card */
 
 .fade-in {
   animation: fadeIn 280ms ease;
@@ -70,4 +92,3 @@ html, body, #q-app {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
